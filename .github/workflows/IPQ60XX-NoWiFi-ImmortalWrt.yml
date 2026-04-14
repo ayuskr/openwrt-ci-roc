@@ -1,4 +1,4 @@
-name: JDCloud-ImmortalWrt
+name: IPQ60XX-NoWiFi-ImmortalWrt
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ env:
   GENERAL_CONFIG_FILE: configs/General.config
   DIY_SCRIPT: scripts/Roc-script.sh
   CLASH_KERNEL: amd64
-  FIRMWARE_TAG: JDCloud
+  FIRMWARE_TAG: IPQ60XX
   TZ: Asia/Shanghai
 
 jobs:
