@@ -84,3 +84,70 @@ echo "baidu.com"  > package/luci-app-passwall/luci-app-passwall/root/usr/share/p
 
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+#新加项
+# =========================
+# 🔥 去 WiFi + USB（核心）
+# =========================
+
+echo "===== Disable WiFi ====="
+
+#  无线核心
+sed -i 's/CONFIG_PACKAGE_kmod-ath11k.*/# CONFIG_PACKAGE_kmod-ath11k is not set/g' .config
+sed -i 's/CONFIG_PACKAGE_kmod-mac80211.*/# CONFIG_PACKAGE_kmod-mac80211 is not set/g' .config
+sed -i 's/CONFIG_PACKAGE_kmod-cfg80211.*/# CONFIG_PACKAGE_kmod-cfg80211 is not set/g' .config
+sed -i '/ipq-wifi/d' target/linux/ipq60xx/image/*.mk
+
+# 用户层
+sed -i 's/CONFIG_PACKAGE_wpad.*/# CONFIG_PACKAGE_wpad is not set/g' .config
+sed -i 's/CONFIG_PACKAGE_hostapd.*/# CONFIG_PACKAGE_hostapd is not set/g' .config
+sed -i 's/CONFIG_PACKAGE_wireless-regdb.*/# CONFIG_PACKAGE_wireless-regdb is not set/g' .config
+
+# 强制关闭无线子系统（关键🔥）
+echo "# CONFIG_WLAN is not set" >> .config
+
+# LuCI 无线界面
+echo "# CONFIG_PACKAGE_luci-app-wireless is not set" >> .config
+
+
+echo "===== Disable USB ====="
+
+# USB 内核级关闭
+sed -i 's/CONFIG_USB_SUPPORT=y/# CONFIG_USB_SUPPORT is not set/g' .config
+
+# USB 驱动
+sed -i 's/CONFIG_PACKAGE_kmod-usb.*/# CONFIG_PACKAGE_kmod-usb is not set/g' .config
+
+
+
+echo "===== Keep Main Router Core ====="
+
+# 主路由必须组件（防止断网）
+echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
+echo "CONFIG_PACKAGE_firewall4=y" >> .config
+echo "CONFIG_PACKAGE_ip-full=y" >> .config
+
+
+echo "===== Add Plugins ====="
+
+# Passwall
+echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
+
+# MosDNS
+echo "CONFIG_PACKAGE_luci-app-mosdns=y" >> .config
+echo "CONFIG_PACKAGE_mosdns=y" >> .config
+echo "CONFIG_PACKAGE_v2dat=y" >> .config
+
+# Lucky
+echo "CONFIG_PACKAGE_luci-app-lucky=y" >> .config
+
+# Gecoosac
+echo "CONFIG_PACKAGE_luci-app-gecoosac=y" >> .config
+
+# Passwall依赖
+echo "CONFIG_PACKAGE_xray-core=y" >> .config
+echo "CONFIG_PACKAGE_v2ray-core=y" >> .config
+
+
+echo "===== Finalizing Config ====="
+make defconfig
