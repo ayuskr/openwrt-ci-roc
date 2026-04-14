@@ -1,0 +1,98 @@
+name: M2-NoWiFi-NoUSB-MainRouter
+
+on:
+workflow_dispatch:
+
+jobs:
+build:
+runs-on: ubuntu-22.04
+
+```
+steps:
+- name: Checkout
+  uses: actions/checkout@v4
+
+- name: 安装依赖
+  run: |
+    sudo apt update
+    sudo apt install -y build-essential clang flex bison g++ gawk \
+    gcc-multilib g++-multilib gettext git libncurses5-dev \
+    libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+
+- name: 拉取 ImmortalWrt
+  run: |
+    git clone https://github.com/immortalwrt/immortalwrt openwrt
+
+- name: 添加插件
+  run: |
+    cd openwrt
+
+    # 科学插件
+    git clone https://github.com/xiaorouji/openwrt-passwall package/passwall
+    git clone https://github.com/sbwml/luci-app-mosdns package/mosdns
+    git clone https://github.com/gdy666/luci-app-lucky package/lucky
+
+    # 插件合集（含 gecoosac）
+    git clone https://github.com/kenzok8/openwrt-packages package/kenzo
+
+- name: 更新 feeds
+  run: |
+    cd openwrt
+    ./scripts/feeds update -a
+    ./scripts/feeds install -a
+
+- name: 生成默认配置
+  run: |
+    cd openwrt
+    make defconfig
+
+- name: 精简系统（核心🔥）
+  run: |
+    cd openwrt
+
+    # ===== 禁用 WiFi（IPQ60xx关键）=====
+    echo "# CONFIG_PACKAGE_kmod-ath11k is not set" >> .config
+    echo "# CONFIG_PACKAGE_kmod-mac80211 is not set" >> .config
+    echo "# CONFIG_PACKAGE_kmod-cfg80211 is not set" >> .config
+    echo "# CONFIG_PACKAGE_wpad is not set" >> .config
+    echo "# CONFIG_PACKAGE_hostapd is not set" >> .config
+    echo "# CONFIG_PACKAGE_wireless-regdb is not set" >> .config
+    echo "# CONFIG_WLAN is not set" >> .config
+
+    # ===== 禁用 USB =====
+    echo "# CONFIG_PACKAGE_kmod-usb-core is not set" >> .config
+    echo "# CONFIG_PACKAGE_kmod-usb2 is not set" >> .config
+    echo "# CONFIG_PACKAGE_kmod-usb3 is not set" >> .config
+    echo "# CONFIG_USB_SUPPORT is not set" >> .config
+
+    # ===== 移除无线界面 =====
+    echo "# CONFIG_PACKAGE_luci-app-wireless is not set" >> .config
+
+    # ===== 主路由必须保留 =====
+    echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
+    echo "CONFIG_PACKAGE_firewall4=y" >> .config
+    echo "CONFIG_PACKAGE_ip-full=y" >> .config
+
+    # ===== 科学插件 =====
+    echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
+    echo "CONFIG_PACKAGE_luci-app-mosdns=y" >> .config
+    echo "CONFIG_PACKAGE_luci-app-lucky=y" >> .config
+    echo "CONFIG_PACKAGE_luci-app-gecoosac=y" >> .config
+
+    # ===== Passwall依赖 =====
+    echo "CONFIG_PACKAGE_xray-core=y" >> .config
+    echo "CONFIG_PACKAGE_v2ray-core=y" >> .config
+
+    make defconfig
+
+- name: 编译
+  run: |
+    cd openwrt
+    make -j$(nproc)
+
+- name: 上传固件
+  uses: actions/upload-artifact@v4
+  with:
+    name: M2-firmware
+    path: openwrt/bin/targets/
+```
